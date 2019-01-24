@@ -11,7 +11,6 @@ commits_in_span = [0, 0, 0, 0, 0]
 commits_count = 0
 current_time = int(time.time())
 git_dir = "/home/dhirajsharma/Drive/Arson/Projects/Python/GitAnalytics/"
-# git_dir = "/home/dhirajsharma/Drive/SmartMobe/Projects/Android/4service-android/"
 
 
 def get_committer_index(commit):
@@ -87,12 +86,16 @@ def log_spans_stats():
     print(format_commit_count(commits_in_span[4]) + " in last one year")
 
 
-divider()
-set_up_repo()
-divider()
-filter_commits_for_committer()
-log_committer_stats()
-divider()
-filter_commits_for_spans()
-log_spans_stats()
-divider()
+def main():
+    divider()
+    set_up_repo()
+    divider()
+    filter_commits_for_committer()
+    log_committer_stats()
+    divider()
+    filter_commits_for_spans()
+    log_spans_stats()
+    divider()
+
+
+main()
