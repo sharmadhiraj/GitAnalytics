@@ -1,6 +1,6 @@
 class Committer(object):
     name = ""
-    email=""
+    email = ""
     count = 0
 
     def __init__(self, name, email):
@@ -8,5 +8,5 @@ class Committer(object):
         self.email = email
         self.count = 1
 
-    def addCommit(self):
-    	self.count=self.count+1
+    def add_commit(self):
+        self.count += 1
