@@ -10,7 +10,7 @@ committer_list = []
 commits_in_span = [0, 0, 0, 0, 0]
 commits_count = 0
 current_time = int(time.time())
-git_dir = "/home/dhirajsharma/Drive/Arson/Projects/Python/GitAnalytics/"
+git_dir = "/Users/dhirajsharma/Project/GitAnalytics"
 
 
 def get_committer_index(commit):
