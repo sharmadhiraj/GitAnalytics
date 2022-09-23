@@ -1,5 +1,5 @@
 gitdb==4.0.7
 GitPython==3.1.17
-protobuf==3.15.8
+protobuf==3.18.3
 six==1.15.0
 smmap==4.0.0
