@@ -1,8 +1,10 @@
+import os
+import sys
 import time
 
 from git import Repo
+
 from committer import Committer
-import sys
 
 repo = None
 commits = []
@@ -10,8 +12,13 @@ committer_list = []
 commits_in_span = [0, 0, 0, 0, 0]
 commits_count = 0
 current_time = int(time.time())
-git_dir = "/Users/dhirajsharma/Project/GitAnalytics"
 
+
+def get_directory():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    else:
+        return os.getcwd()
 
 def get_committer_index(commit):
     return next((i for i, item in enumerate(committer_list) if item.email == commit.author.email), -1)
@@ -30,7 +37,9 @@ def set_up_repo():
     global repo, commits, commits_count
 
     try:
-        repo = Repo(git_dir)
+        dire = get_directory()
+        print(dire)
+        repo = Repo(dire)
         commits = list(repo.iter_commits())
     except:
         print("Not valid git repo or no commits available.")
