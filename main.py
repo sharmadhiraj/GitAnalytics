@@ -1,110 +1,107 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import time
+from dataclasses import dataclass, field
 
 from git import Repo
+from git.exc import InvalidGitRepositoryError, GitCommandError
 
-from committer import Committer
 
-repo = None
-commits = []
-committer_list = []
-commits_in_span = [0, 0, 0, 0, 0]
-commits_count = 0
-current_time = int(time.time())
+@dataclass
+class Committer:
+    name: str
+    email: str
+    commit_count: int = field(default=1)
+
+    def increment(self):
+        self.commit_count += 1
 
 
 def get_directory():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    else:
-        return os.getcwd()
-
-def get_committer_index(commit):
-    return next((i for i, item in enumerate(committer_list) if item.email == commit.author.email), -1)
+    return sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
 
 
-def format_commit_count(count):
-    return str(count) + " commits (" + str(
-        round(count / commits_count * 100, 1)) + "%)"
-
-
-def divider():
-    print("=========================================================================================")
-
-
-def set_up_repo():
-    global repo, commits, commits_count
-
+def setup_repository(directory):
     try:
-        dire = get_directory()
-        print(dire)
-        repo = Repo(dire)
+        repo = Repo(directory)
         commits = list(repo.iter_commits())
-    except:
-        print("Not valid git repo or no commits available.")
+        if not commits:
+            raise GitCommandError("No commits", 1)
+        print(f"Repository directory: {directory}")
+        print(f"Total commits found: {len(commits)}")
+        return repo, commits
+    except (InvalidGitRepositoryError, GitCommandError) as e:
+        print(f"Error: Not a valid git repository or no commits available ({e})")
         sys.exit(1)
 
-    commits_count = len(commits)
-    print("Total commits : " + str(commits_count))
+
+def find_committer_index(commit, committers):
+    return next((i for i, c in enumerate(committers) if c.email == commit.author.email), -1)
 
 
-def filter_commits_for_committer():
+def gather_committers(commits):
+    committers_by_email = {}
     for commit in commits:
-        index = get_committer_index(commit)
-        if index == -1:
-            committer_list.append(Committer(commit.author.name, commit.author.email))
+        email = commit.author.email
+        if email not in committers_by_email:
+            committers_by_email[email] = Committer(commit.author.name, email)
         else:
-            committer_list[index].increment_commit_count()
+            committers_by_email[email].increment()
 
-    committer_list.sort(key=lambda x: x.commit_count, reverse=True)
-
-
-def log_committer_stats():
-    print("Commits by author")
-    for committer in committer_list:
-        print(
-            format_commit_count(committer.commit_count) +
-            " from " +
-            committer.name +
-            "(" + committer.email + ")"
-        )
+    committers = list(committers_by_email.values())
+    committers.sort(key=lambda c: c.commit_count, reverse=True)
+    return committers
 
 
-def filter_commits_for_spans():
+def display_committers(committers, total_commits):
+    print("Commits by author:")
+    for c in committers:
+        percent = round(c.commit_count / total_commits * 100, 1)
+        print(f"{c.commit_count} commits ({percent}%) from {c.name} <{c.email}>")
+
+
+def gather_commit_spans(commits, current_time):
+    spans = [0] * 5
+    intervals = [3600, 86400, 604800, 2592000, 31104000]  # 1h,1d,1w,1m,1y
     for commit in commits:
-        commit_ago = current_time - commit.authored_date
-        if commit_ago < 3600:
-            commits_in_span[0] += 1
-        if commit_ago < 86400:
-            commits_in_span[1] += 1
-        if commit_ago < 604800:
-            commits_in_span[2] += 1
-        if commit_ago < 2592000:
-            commits_in_span[3] += 1
-        if commit_ago < 31104000:
-            commits_in_span[4] += 1
+        age = current_time - commit.authored_date
+        for i, interval in enumerate(intervals):
+            if age < interval:
+                spans[i] += 1
+    return spans
 
 
-def log_spans_stats():
-    print("Commits by time")
-    print(format_commit_count(commits_in_span[0]) + " in last one hour")
-    print(format_commit_count(commits_in_span[1]) + " in last one day")
-    print(format_commit_count(commits_in_span[2]) + " in last one week")
-    print(format_commit_count(commits_in_span[3]) + " in last one month")
-    print(format_commit_count(commits_in_span[4]) + " in last one year")
+def display_commit_spans(spans, total_commits):
+    labels = ["last 1 hour", "last 1 day", "last 1 week", "last 1 month", "last 1 year"]
+    print("Commits by time:")
+    for count, label in zip(spans, labels):
+        percent = round(count / total_commits * 100, 1)
+        print(f"{count} commits ({percent}%) in {label}")
+
+
+def print_divider():
+    print("=" * 90)
 
 
 def main():
-    divider()
-    set_up_repo()
-    divider()
-    filter_commits_for_committer()
-    log_committer_stats()
-    divider()
-    filter_commits_for_spans()
-    log_spans_stats()
-    divider()
+    current_time = int(time.time())
+    directory = get_directory()
+
+    print_divider()
+    repo, commits = setup_repository(directory)
+    total_commits = len(commits)
+    print_divider()
+
+    committers = gather_committers(commits)
+    display_committers(committers, total_commits)
+    print_divider()
+
+    spans = gather_commit_spans(commits, current_time)
+    display_commit_spans(spans, total_commits)
+    print_divider()
 
 
-main()
+if __name__ == "__main__":
+    main()
